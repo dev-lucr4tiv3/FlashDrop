@@ -9,7 +9,6 @@
 </head>
 <body>
     <div id="app">
-        <!-- Landing Screen -->
         <div id="landing-screen" class="screen active">
             <div class="container">
                 <div class="hero">
@@ -36,7 +35,6 @@
             </div>
         </div>
 
-        <!-- Create Room Screen -->
         <div id="create-room-screen" class="screen">
             <div class="container">
                 <button class="back-btn" onclick="showLanding()">
@@ -58,7 +56,6 @@
             </div>
         </div>
 
-        <!-- Join Room Screen -->
         <div id="join-room-screen" class="screen">
             <div class="container">
                 <button class="back-btn" onclick="showLanding()">
@@ -84,7 +81,6 @@
             </div>
         </div>
 
-        <!-- Chat Screen -->
         <div id="chat-screen" class="screen">
             <div class="chat-container">
                 <div class="chat-header">
@@ -97,8 +93,14 @@
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
-                    </div>
-                    <div class="chat-controls">
+                    </div>                    <div class="chat-controls">                        <div class="media-controls">
+                            <button id="toggle-audio" class="media-btn" title="Mikrofon an/aus">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button id="screen-share" class="media-btn" title="Bildschirm teilen">
+                                <i class="fas fa-desktop"></i>
+                            </button>
+                        </div>
                         <div class="connection-status" id="connection-status">
                             <i class="fas fa-circle"></i>
                             <span>Verbunden</span>
@@ -107,12 +109,21 @@
                             <i class="fas fa-sign-out-alt"></i> Verlassen
                         </button>
                     </div>
-                </div>
-
-                <div class="chat-main">
+                </div>                <div class="chat-main">
                     <div class="sidebar">
                         <h4>Online Benutzer (<span id="user-count">0</span>)</h4>
                         <div id="user-list"></div>
+                        <div class="video-section">
+                            <h4>Bildschirmfreigabe</h4>
+                            <div id="video-container">
+                                <video id="local-video" autoplay muted playsinline style="display: none;"></video>
+                                <div id="remote-videos"></div>
+                                <div id="no-screen-share" class="no-media-message">
+                                    <i class="fas fa-desktop"></i>
+                                    <p>Keine aktive Bildschirmfreigabe</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="chat-area">
@@ -120,11 +131,27 @@
                         
                         <div class="message-input-container">
                             <div class="input-wrapper">
+                                <button id="emoji-btn" class="emoji-toggle" title="Emojis">
+                                    <i class="far fa-smile"></i>
+                                </button>
                                 <input type="text" id="message-input" placeholder="Nachricht eingeben..." maxlength="500">
                                 <button id="send-btn">
                                     <i class="fas fa-paper-plane"></i>
                                 </button>
                             </div>
+                            
+                            <div id="emoji-picker" class="emoji-picker hidden">
+                                <div class="emoji-categories">
+                                    <button class="emoji-category active" data-category="smileys">😊</button>
+                                    <button class="emoji-category" data-category="gestures">👋</button>
+                                    <button class="emoji-category" data-category="objects">📱</button>
+                                    <button class="emoji-category" data-category="nature">🌟</button>
+                                    <button class="emoji-category" data-category="food">🍕</button>
+                                    <button class="emoji-category" data-category="travel">✈️</button>
+                                </div>
+                                <div class="emoji-grid" id="emoji-grid"></div>
+                            </div>
+                            
                             <div class="input-info">
                                 <small>Ende-zu-Ende verschlüsselt über WebRTC</small>
                             </div>
@@ -135,7 +162,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="app.js"></script>
 </body>

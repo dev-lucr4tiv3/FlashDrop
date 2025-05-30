@@ -15,37 +15,30 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store active rooms and users
 const rooms = new Map();
 const users = new Map();
 
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    // Create or join room
     socket.on('join-room', (roomId, username) => {
         socket.join(roomId);
         
-        // Store user info
         users.set(socket.id, { username, roomId });
         
-        // Initialize room if it doesn't exist
         if (!rooms.has(roomId)) {
             rooms.set(roomId, new Set());
         }
         
         rooms.get(roomId).add(socket.id);
         
-        // Notify others in the room
         socket.to(roomId).emit('user-joined', { 
             userId: socket.id, 
             username: username 
         });
         
-        // Send current users in room to the new user
         const currentUsers = Array.from(rooms.get(roomId))
             .filter(id => id !== socket.id)
             .map(id => ({ 
@@ -58,7 +51,6 @@ io.on('connection', (socket) => {
         console.log(`${username} joined room ${roomId}`);
     });
 
-    // Handle WebRTC signaling
     socket.on('offer', (data) => {
         socket.to(data.target).emit('offer', {
             offer: data.offer,
@@ -80,7 +72,6 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Handle regular chat messages (fallback)
     socket.on('chat-message', (data) => {
         const user = users.get(socket.id);
         if (user) {
@@ -92,7 +83,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle disconnect
     socket.on('disconnect', () => {
         const user = users.get(socket.id);
         if (user) {

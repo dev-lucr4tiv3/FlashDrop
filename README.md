@@ -7,6 +7,9 @@ Eine sichere Peer-to-Peer Chat-Anwendung, die direkte Kommunikation zwischen Bro
 - 🔒 **Ende-zu-Ende Verschlüsselung** über WebRTC
 - 🚀 **Peer-to-Peer Kommunikation** ohne Server-Zwischenspeicherung
 - 💬 **Echtzeit Chat** mit sofortiger Nachrichtenübertragung
+- 🎙️ **Audio Chat** mit Mikrofon-Steuerung
+- 🖥️ **Bildschirmfreigabe** für Präsentationen und Zusammenarbeit
+- 😊 **Emoji Support** mit kategorisiertem Emoji-Picker
 - 🎨 **Modernes UI** mit responsivem Design
 - 🔗 **Einfaches Teilen** über Raum-IDs
 - 🌐 **Browser-basiert** - keine Installation erforderlich

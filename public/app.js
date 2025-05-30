@@ -3,15 +3,28 @@ class FlashDropApp {
         this.socket = null;
         this.roomId = null;
         this.username = null;
-        this.peers = new Map(); // Store peer connections
-        this.dataChannels = new Map(); // Store data channels
-        this.localStream = null;
+        this.peers = new Map();
+        this.dataChannels = new Map();        this.localStream = null;
+        this.isAudioEnabled = false;
+        this.isScreenSharing = false;
+        this.emojis = this.initializeEmojis();
         
         this.init();
     }
 
+    initializeEmojis() {
+        return {
+            smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳'],
+            gestures: ['👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '👐', '🤝', '🙏'],
+            objects: ['📱', '💻', '🖥️', '🖨️', '⌨️', '🖱️', '🖲️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '⏰', '🕰️', '⏲️', '⏱️', '🧭'],
+            nature: ['🌟', '⭐', '🌠', '☀️', '🌤️', '⛅', '🌦️', '🌧️', '⛈️', '🌩️', '🌨️', '❄️', '☃️', '⛄', '🌪️', '🌈', '🌙', '🌛', '🌜', '🌚', '🌝', '🌞', '🪐', '💫', '⚡', '🔥', '💥', '☄️'],
+            food: ['🍕', '🍔', '🍟', '🌭', '🥪', '🌮', '🌯', '🥙', '🧆', '🥚', '🍳', '🥘', '🍲', '🥗', '🍿', '🧈', '🥞', '🧇', '🥓', '🍗', '🍖', '🌭', '🥩', '🍤', '🦞', '🦀', '🦑', '🐙', '🦪', '🍣'],
+            travel: ['✈️', '🛫', '🛬', '🪂', '💺', '🚁', '🚟', '🚠', '🚡', '🛰️', '🚀', '🛸', '🚉', '🚊', '🚝', '🚞', '🚋', '🚃', '🚋', '🚆', '🚄', '🚅', '🚈', '🚂', '🚐', '🚑', '🚒', '🚓', '🚔', '🚕']        };
+    }
+
     init() {
         this.setupEventListeners();
+        this.initializeEmojiPicker();
         this.showScreen('landing-screen');
     }
 
@@ -34,14 +47,34 @@ class FlashDropApp {
 
         document.getElementById('send-btn').addEventListener('click', () => {
             this.sendMessage();
-        });
-
-        document.getElementById('copy-room-id').addEventListener('click', () => {
+        });        document.getElementById('copy-room-id').addEventListener('click', () => {
             this.copyRoomId();
         });
 
         document.getElementById('leave-chat').addEventListener('click', () => {
             this.leaveChat();
+        });
+
+        document.getElementById('toggle-audio').addEventListener('click', () => {
+            this.toggleAudio();
+        });
+
+        document.getElementById('screen-share').addEventListener('click', () => {            this.toggleScreenShare();
+        });
+
+        document.getElementById('emoji-btn').addEventListener('click', () => {
+            this.toggleEmojiPicker();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.emoji-picker') && !e.target.closest('#emoji-btn')) {
+                this.hideEmojiPicker();            }
+        });
+
+        document.querySelectorAll('.emoji-category').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchEmojiCategory(e.target.dataset.category);
+            });
         });
     }
 
@@ -125,12 +158,11 @@ class FlashDropApp {
         this.socket.on('chat-message', (data) => {
             this.displayMessage(data.username, data.message, false);
         });
-    }
-
-    showChatScreen() {
-        this.showScreen('chat-screen');
+    }    showChatScreen() {        this.showScreen('chat-screen');
         document.getElementById('current-room-id').textContent = this.roomId;
         this.showNotification(`Chat-Raum ${this.roomId} erstellt!`);
+        this.updateAudioButton();
+        this.updateScreenShareButton();
     }
 
     createPeerConnection(userId, isInitiator = false) {
@@ -162,11 +194,23 @@ class FlashDropApp {
                     candidate: event.candidate
                 });
             }
-        };
-
-        peerConnection.onconnectionstatechange = () => {
+        };        peerConnection.onconnectionstatechange = () => {
             console.log(`Connection state with ${userId}:`, peerConnection.connectionState);
         };
+        peerConnection.ontrack = (event) => {
+            console.log('Received remote track:', event.track.kind);
+            this.handleRemoteStream(event.streams[0], userId);
+            
+            if (event.track.kind === 'audio') {
+                this.monitorAudioTrack(event.track, userId);
+            }
+        };
+
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, this.localStream);
+            });
+        }
 
         if (isInitiator) {
             this.createOffer(userId);
@@ -249,11 +293,14 @@ class FlashDropApp {
         this.displaySystemMessage(`${data.username} ist dem Chat beigetreten`);
         
         this.createPeerConnection(data.userId, true);
-    }
-
-    handleUserLeft(data) {
+    }    handleUserLeft(data) {
         this.removeUserFromList(data.userId);
         this.displaySystemMessage(`${data.username} hat den Chat verlassen`);
+        
+        const remoteVideo = document.getElementById(`remote-video-${data.userId}`);
+        if (remoteVideo) {
+            remoteVideo.remove();
+        }
         
         const peerConnection = this.peers.get(data.userId);
         if (peerConnection) {
@@ -377,11 +424,23 @@ class FlashDropApp {
         }).catch(() => {
             this.showNotification('Fehler beim Kopieren', 'error');
         });
-    }
-
-    leaveChat() {
+    }    leaveChat() {
         if (this.socket) {
             this.socket.disconnect();
+        }
+        
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+        const remoteVideos = document.getElementById('remote-videos');
+        if (remoteVideos) {
+            remoteVideos.innerHTML = '';
+        }
+        
+        const localVideo = document.getElementById('local-video');
+        if (localVideo) {
+            localVideo.srcObject = null;
         }
         
         this.peers.forEach(pc => pc.close());
@@ -389,6 +448,8 @@ class FlashDropApp {
         
         this.dataChannels.forEach(dc => dc.close());
         this.dataChannels.clear();
+        this.isAudioEnabled = false;
+        this.isScreenSharing = false;
         
         this.roomId = null;
         this.username = null;
@@ -407,12 +468,303 @@ class FlashDropApp {
         setTimeout(() => {
             notification.remove();
         }, 3000);
-    }
-
-    escapeHtml(text) {
+    }    escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    async toggleAudio() {
+        try {
+            if (!this.localStream) {
+                await this.startLocalStream();
+                return;
+            }
+
+            const audioTrack = this.localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                this.isAudioEnabled = !this.isAudioEnabled;
+                audioTrack.enabled = this.isAudioEnabled;
+                this.updateAudioButton();
+            } else if (!this.isAudioEnabled) {
+                await this.startLocalStream();
+            }
+        } catch (error) {
+            console.error('Error toggling audio:', error);
+            this.showNotification('Fehler beim Mikrofon-Zugriff', 'error');
+        }
+    }
+
+    async toggleScreenShare() {
+        try {
+            if (this.isScreenSharing) {
+                await this.stopScreenShare();
+            } else {
+                await this.startScreenShare();
+            }
+        } catch (error) {
+            console.error('Error toggling screen share:', error);
+            this.showNotification('Fehler beim Bildschirm teilen', 'error');
+        }
+    }    async startLocalStream() {
+        try {
+            const constraints = {
+                audio: true,
+                video: false
+            };
+
+            this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            this.peers.forEach(peerConnection => {
+                this.localStream.getTracks().forEach(track => {
+                    const existingSender = peerConnection.getSenders().find(sender => 
+                        sender.track && sender.track.kind === track.kind
+                    );
+                    
+                    if (!existingSender) {
+                        peerConnection.addTrack(track, this.localStream);
+                    }
+                });
+            });
+
+            this.isAudioEnabled = true;
+            this.updateAudioButton();
+            
+            this.renegotiateConnections();
+        } catch (error) {
+            console.error('Error starting local stream:', error);
+            if (error.name === 'NotAllowedError') {
+                this.showNotification('Mikrofon-Zugriff verweigert', 'error');
+            } else if (error.name === 'NotFoundError') {
+                this.showNotification('Kein Mikrofon gefunden', 'error');
+            } else {
+                this.showNotification('Fehler beim Medienzugriff', 'error');
+            }
+            throw error;
+        }
+    }async startScreenShare() {
+        try {
+            if (!navigator.mediaDevices.getDisplayMedia) {
+                throw new Error('Screen sharing not supported');
+            }
+
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: true
+            });
+
+            const videoTrack = screenStream.getVideoTracks()[0];
+            
+            this.peers.forEach(peerConnection => {
+                const sender = peerConnection.getSenders().find(s => 
+                    s.track && s.track.kind === 'video'
+                );
+                if (sender) {
+                    sender.replaceTrack(videoTrack);
+                } else {
+                    peerConnection.addTrack(videoTrack, screenStream);
+                }
+            });
+
+            const localVideo = document.getElementById('local-video');
+            if (localVideo) {
+                localVideo.srcObject = screenStream;
+                localVideo.style.display = 'block';
+            }
+
+            const noScreenShare = document.getElementById('no-screen-share');
+            if (noScreenShare) {
+                noScreenShare.style.display = 'none';
+            }
+
+            this.isScreenSharing = true;
+            this.updateScreenShareButton();
+            
+            this.renegotiateConnections();
+
+            videoTrack.onended = () => {
+                this.stopScreenShare();
+            };
+        } catch (error) {
+            console.error('Error starting screen share:', error);
+            if (error.name === 'NotAllowedError') {
+                this.showNotification('Bildschirmfreigabe verweigert', 'error');
+            } else {
+                this.showNotification('Bildschirmfreigabe nicht unterstützt', 'error');
+            }
+            throw error;
+        }
+    }    async stopScreenShare() {
+        try {
+            this.peers.forEach(peerConnection => {
+                const sender = peerConnection.getSenders().find(s => 
+                    s.track && s.track.kind === 'video'
+                );
+                if (sender) {
+                    sender.replaceTrack(null);
+                }
+            });
+
+            const localVideo = document.getElementById('local-video');
+            if (localVideo) {
+                localVideo.srcObject = null;
+                localVideo.style.display = 'none';
+            }
+
+            const noScreenShare = document.getElementById('no-screen-share');
+            if (noScreenShare) {
+                noScreenShare.style.display = 'block';
+            }
+
+            this.isScreenSharing = false;
+            this.updateScreenShareButton();
+            
+            this.renegotiateConnections();
+        } catch (error) {
+            console.error('Error stopping screen share:', error);
+            throw error;
+        }
+    }    handleRemoteStream(stream, userId) {
+        let remoteVideo = document.getElementById(`remote-video-${userId}`);
+        
+        if (!remoteVideo) {
+            const remoteVideosContainer = document.getElementById('remote-videos');
+            remoteVideo = document.createElement('video');
+            remoteVideo.id = `remote-video-${userId}`;
+            remoteVideo.autoplay = true;
+            remoteVideo.playsinline = true;
+            remoteVideo.className = 'remote-video';
+            remoteVideosContainer.appendChild(remoteVideo);
+        }
+
+        remoteVideo.srcObject = stream;
+        
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            this.showAudioIndicator(userId, true);
+        }
+    }
+
+    async renegotiateConnections() {
+        for (const [userId, peerConnection] of this.peers) {
+            try {
+                if (peerConnection.connectionState === 'connected') {
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    
+                    this.socket.emit('offer', {
+                        target: userId,
+                        offer: offer
+                    });
+                }
+            } catch (error) {
+                console.error(`Error renegotiating connection with ${userId}:`, error);
+            }
+        }
+    }
+    showAudioIndicator(userId, isActive) {
+        const userElement = document.getElementById(`user-${userId}`);
+        if (userElement) {
+            const indicator = userElement.querySelector('.status');
+            if (indicator) {
+                if (isActive) {
+                    indicator.classList.add('audio-active');
+                } else {
+                    indicator.classList.remove('audio-active');
+                }
+            }
+        }
+    }
+
+    monitorAudioTrack(track, userId) {
+        if (track.enabled) {
+            this.showAudioIndicator(userId, true);
+            
+            setTimeout(() => {
+                if (!track.enabled) {
+                    this.showAudioIndicator(userId, false);
+                }
+            }, 5000);
+        } else {
+            this.showAudioIndicator(userId, false);
+        }
+    }    updateAudioButton() {
+        const audioBtn = document.getElementById('toggle-audio');
+        if (!audioBtn) return;
+        
+        const icon = audioBtn.querySelector('i');
+        
+        if (this.isAudioEnabled) {
+            audioBtn.classList.remove('disabled');
+            icon.className = 'fas fa-microphone';
+            this.showAudioIndicator('me', true);
+        } else {
+            audioBtn.classList.add('disabled');
+            icon.className = 'fas fa-microphone-slash';
+            this.showAudioIndicator('me', false);
+        }
+    }
+
+    updateScreenShareButton() {
+        const screenBtn = document.getElementById('screen-share');
+        if (!screenBtn) return;
+        
+        const icon = screenBtn.querySelector('i');
+        
+        if (this.isScreenSharing) {
+            screenBtn.classList.add('active');
+            icon.className = 'fas fa-stop';
+        } else {
+            screenBtn.classList.remove('active');
+            icon.className = 'fas fa-desktop';
+        }
+    }
+
+    initializeEmojiPicker() {
+        this.switchEmojiCategory('smileys');
+    }
+
+    toggleEmojiPicker() {
+        const emojiPicker = document.getElementById('emoji-picker');
+        emojiPicker.classList.toggle('hidden');
+    }
+
+    hideEmojiPicker() {
+        const emojiPicker = document.getElementById('emoji-picker');
+        emojiPicker.classList.add('hidden');
+    }
+
+    switchEmojiCategory(category) {
+        document.querySelectorAll('.emoji-category').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+
+        const emojiGrid = document.getElementById('emoji-grid');
+        emojiGrid.innerHTML = '';
+
+        this.emojis[category].forEach(emoji => {
+            const emojiButton = document.createElement('button');
+            emojiButton.className = 'emoji-item';
+            emojiButton.textContent = emoji;
+            emojiButton.addEventListener('click', () => {
+                this.insertEmoji(emoji);
+            });
+            emojiGrid.appendChild(emojiButton);
+        });
+    }
+
+    insertEmoji(emoji) {
+        const messageInput = document.getElementById('message-input');
+        const currentValue = messageInput.value;
+        const cursorPosition = messageInput.selectionStart;
+        
+        const newValue = currentValue.slice(0, cursorPosition) + emoji + currentValue.slice(cursorPosition);
+        messageInput.value = newValue;
+        
+        messageInput.setSelectionRange(cursorPosition + emoji.length, cursorPosition + emoji.length);
+        messageInput.focus();
+        
+        this.hideEmojiPicker();
     }
 }
 
