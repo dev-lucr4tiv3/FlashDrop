@@ -94,12 +94,7 @@
                             </button>
                         </div>
                     </div>                    <div class="chat-controls">                        <div class="media-controls">
-                            <button id="toggle-audio" class="media-btn" title="Mikrofon an/aus">
-                                <i class="fas fa-microphone"></i>
-                            </button>
-                            <button id="screen-share" class="media-btn" title="Bildschirm teilen">
-                                <i class="fas fa-desktop"></i>
-                            </button>
+                            <!-- File sharing controls moved to input area -->
                         </div>
                         <div class="connection-status" id="connection-status">
                             <i class="fas fa-circle"></i>
@@ -109,31 +104,22 @@
                             <i class="fas fa-sign-out-alt"></i> Verlassen
                         </button>
                     </div>
-                </div>                <div class="chat-main">
-                    <div class="sidebar">
+                </div>                <div class="chat-main">                    <div class="sidebar">
                         <h4>Online Benutzer (<span id="user-count">0</span>)</h4>
                         <div id="user-list"></div>
-                        <div class="video-section">
-                            <h4>Bildschirmfreigabe</h4>
-                            <div id="video-container">
-                                <video id="local-video" autoplay muted playsinline style="display: none;"></video>
-                                <div id="remote-videos"></div>
-                                <div id="no-screen-share" class="no-media-message">
-                                    <i class="fas fa-desktop"></i>
-                                    <p>Keine aktive Bildschirmfreigabe</p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="chat-area">
                         <div id="messages-container"></div>
                         
-                        <div class="message-input-container">
-                            <div class="input-wrapper">
+                        <div class="message-input-container">                            <div class="input-wrapper">
                                 <button id="emoji-btn" class="emoji-toggle" title="Emojis">
                                     <i class="far fa-smile"></i>
                                 </button>
+                                <button id="file-btn" class="file-toggle" title="Datei anhängen">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <input type="file" id="file-input" style="display: none;" multiple>
                                 <input type="text" id="message-input" placeholder="Nachricht eingeben..." maxlength="500">
                                 <button id="send-btn">
                                     <i class="fas fa-paper-plane"></i>
@@ -160,9 +146,7 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
+    </div>    <script src="/socket.io/socket.io.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
