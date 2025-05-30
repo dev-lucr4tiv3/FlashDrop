@@ -1,0 +1,18 @@
+{
+  "name": "flashdrop",
+  "version": "1.0.0",
+  "description": "P2P Chat Web Application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["p2p", "chat", "webrtc", "peer-to-peer"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.0"
+  }
+}

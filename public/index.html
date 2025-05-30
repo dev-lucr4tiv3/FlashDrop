@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashDrop - P2P Chat</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Landing Screen -->
+        <div id="landing-screen" class="screen active">
+            <div class="container">
+                <div class="hero">
+                    <div class="logo">
+                        <i class="fas fa-bolt"></i>
+                        <h1>FlashDrop</h1>
+                    </div>
+                    <p class="tagline">Sichere P2P-Kommunikation im Browser</p>
+                    
+                    <div class="options">
+                        <div class="option-card" onclick="showCreateRoom()">
+                            <i class="fas fa-plus-circle"></i>
+                            <h3>Neuen Chat erstellen</h3>
+                            <p>Erstelle einen neuen Chat-Raum</p>
+                        </div>
+                        
+                        <div class="option-card" onclick="showJoinRoom()">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <h3>Chat beitreten</h3>
+                            <p>Trete einem bestehenden Chat bei</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Room Screen -->
+        <div id="create-room-screen" class="screen">
+            <div class="container">
+                <button class="back-btn" onclick="showLanding()">
+                    <i class="fas fa-arrow-left"></i> Zurück
+                </button>
+                
+                <div class="form-container">
+                    <h2>Neuen Chat erstellen</h2>
+                    <form id="create-room-form">
+                        <div class="input-group">
+                            <label for="create-username">Dein Name:</label>
+                            <input type="text" id="create-username" placeholder="Gib deinen Namen ein" required>
+                        </div>
+                        <button type="submit" class="primary-btn">
+                            <i class="fas fa-rocket"></i> Chat erstellen
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Join Room Screen -->
+        <div id="join-room-screen" class="screen">
+            <div class="container">
+                <button class="back-btn" onclick="showLanding()">
+                    <i class="fas fa-arrow-left"></i> Zurück
+                </button>
+                
+                <div class="form-container">
+                    <h2>Chat beitreten</h2>
+                    <form id="join-room-form">
+                        <div class="input-group">
+                            <label for="join-username">Dein Name:</label>
+                            <input type="text" id="join-username" placeholder="Gib deinen Namen ein" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="room-id">Chat-ID:</label>
+                            <input type="text" id="room-id" placeholder="Chat-ID eingeben" required>
+                        </div>
+                        <button type="submit" class="primary-btn">
+                            <i class="fas fa-sign-in-alt"></i> Beitreten
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Screen -->
+        <div id="chat-screen" class="screen">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="room-info">
+                        <h3>FlashDrop Chat</h3>
+                        <div class="room-id-display">
+                            <span>Raum-ID: </span>
+                            <code id="current-room-id"></code>
+                            <button id="copy-room-id" title="ID kopieren">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chat-controls">
+                        <div class="connection-status" id="connection-status">
+                            <i class="fas fa-circle"></i>
+                            <span>Verbunden</span>
+                        </div>
+                        <button id="leave-chat" class="leave-btn">
+                            <i class="fas fa-sign-out-alt"></i> Verlassen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chat-main">
+                    <div class="sidebar">
+                        <h4>Online Benutzer (<span id="user-count">0</span>)</h4>
+                        <div id="user-list"></div>
+                    </div>
+
+                    <div class="chat-area">
+                        <div id="messages-container"></div>
+                        
+                        <div class="message-input-container">
+                            <div class="input-wrapper">
+                                <input type="text" id="message-input" placeholder="Nachricht eingeben..." maxlength="500">
+                                <button id="send-btn">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                            <div class="input-info">
+                                <small>Ende-zu-Ende verschlüsselt über WebRTC</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
