@@ -1,3 +1,4 @@
+const { io } = require("socket.io-client");
 class FlashDropApp {
     constructor() {
         this.socket = null;
